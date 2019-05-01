@@ -5,6 +5,8 @@ import re
 import socket
 import sys
 
+from .network import get_broadcasts
+
 from typing import Union, Dict, List, Generator
 
 import crc8
@@ -38,7 +40,13 @@ class _SendReadCurrentStateMessage:
 
     def __enter__(self):
         """Send message on initialization."""
-        self.socket.sendto(self.READ_STATE_MESSAGE, (self.ip, 8888))
+        if self.ip == "255.255.255.255":
+           """Send to all known brodcast addresses."""
+           for bcast in get_broadcasts():
+             _LOGGER.debug("Sending to %s" % bcast)
+             self.socket.sendto(self.READ_STATE_MESSAGE, (bcast, 8888))
+        else:
+          self.socket.sendto(self.READ_STATE_MESSAGE, (self.ip, 8888))
         return self
 
     def __exit__(self, *args):
@@ -70,12 +78,16 @@ class _ReceiveStateMessages:
         """Iteration over network messages."""
         pattern = re.compile(b'\xfc[\x90-\xFF]\xff`\x01\n')
         try:
+            _LOGGER.debug("Listening...")
             while True:
                 message, address = self.socket.recvfrom(1024)
                 ip, port = address
+                _LOGGER.debug("Received %s from %s [%s]" % (message, ip, port))
                 if port == 8888 and pattern.match(message):
+                    _LOGGER.debug("Processing state from %s [%s]" % (ip, port))
                     parsed_message = self.parse_message(message[6:], ip)
                     if parsed_message:
+                        _LOGGER.debug("Successfully parsed state message")
                         yield parsed_message
         except socket.timeout:
             return
@@ -100,6 +112,7 @@ class _ReceiveStateMessages:
         elif message[-2] == 3:
             device_type = "SideKick"
         else:
+            _LOGGER.debug("Unknown device type: %s" % message[-2])
             return None
         parsed_message = {
             "ip": ip,
@@ -117,6 +130,7 @@ class _ReceiveStateMessages:
             "ambient_color": message[40:43],
             "ambient_scene": message[62],
         })
+        _LOGGER.debug("Update: %s" % parsed_message)
         if device_type != "SideKick":
             parsed_message.update({
                 "hdmi_input": message[73],
@@ -530,12 +544,14 @@ def get_devices(timeout: float = 1.0) \
     """Return all of the currently detected devices on the network."""
     devices = []  # type: List[Union[DreamScreenHD, DreamScreen4K, SideKick]]
     for state in get_states(timeout=timeout):
+        _LOGGER.debug("Received state: %s" % state)
         if state['device_type'] == 'DreamScreenHD':
             devices.append(DreamScreenHD(ip=state['ip'], state=state))
         elif state['device_type'] == 'DreamScreen4K':
             devices.append(DreamScreen4K(ip=state['ip'], state=state))
         elif state['device_type'] == 'SideKick':
             devices.append(SideKick(ip=state['ip'], state=state))
+    _LOGGER.debug("Devices: %s" % devices)
     return devices
 
 
