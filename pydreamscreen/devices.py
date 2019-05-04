@@ -187,9 +187,9 @@ class _BaseDreamScreenDevice:
         """Representation of device initialiation."""
         return "{}(ip={!r})".format(type(self).__name__, self.ip)
 
-    def update_current_state(self) -> bool:
+    def update_current_state(self, timeout: float = 1.0) -> bool:
         """Force device to get current state."""
-        current_state = get_state(self.ip)
+        current_state = get_state(self.ip, timeout)
         if current_state:
             self._update_current_state(current_state)
             return True
