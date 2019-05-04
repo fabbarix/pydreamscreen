@@ -1,4 +1,4 @@
-import netifaces
+import netifaces # type: ignore
 import logging
 
 _LOGGER = logging.getLogger(__name__)
