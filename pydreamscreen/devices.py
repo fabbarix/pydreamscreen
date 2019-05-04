@@ -153,15 +153,15 @@ class _BaseDreamScreenDevice:
     def __init__(self, ip: str, **kwargs: Dict) -> None:
         """Device setup."""
         self._ip = ip  # type: str
-        self._name = None  # type: str
-        self._group_name = None  # type: str
-        self._group_number = None  # type: int
-        self._mode = None  # type: int
-        self._brightness = None  # type: int
-        self._ambient_color = None  # type: bytes
-        self._ambient_scene = None  # type: int
-        self._update_time = None  # type: datetime.datetime
-        self._recent_state_message = None  # type: bytes
+        self._name = None  # type: Union[None, str]
+        self._group_name = None  # type: Union[None, str]
+        self._group_number = None  # type: Union[None, int]
+        self._mode = None  # type: Union[None, int]
+        self._brightness = None  # type: Union[None, int]
+        self._ambient_color = None  # type: Union[None, bytes]
+        self._ambient_scene = None  # type: Union[None, int]
+        self._update_time = None  # type: Union[None, datetime.datetime]
+        self._recent_state_message = None  # type: Union[None, bytes]
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.setsockopt(socket.SOL_SOCKET,
