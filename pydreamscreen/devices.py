@@ -539,18 +539,27 @@ class SideKick(_BaseDreamScreenDevice):
                 'mode', 'brightness', 'ambient_color', 'ambient_scene']
 
 
+def get_device(state: Dict[str, Union[str, int, bytes, datetime.datetime]) \
+        -> Union[DreamScreenHD, DreamScreen4K, SideKick]:
+    if state['device_type'] == 'DreamScreenHD':
+      return DreamScreenHD(ip=state['ip'], state=state)
+    elif state['device_type'] == 'DreamScreen4K':
+      return DreamScreen4K(ip=state['ip'], state=state)
+    elif state['device_type'] == 'SideKick':
+      return SideKick(ip=state['ip'], state=state)
+
+   return None
+
+
 def get_devices(timeout: float = 1.0) \
         -> List[Union[DreamScreenHD, DreamScreen4K, SideKick]]:
     """Return all of the currently detected devices on the network."""
     devices = []  # type: List[Union[DreamScreenHD, DreamScreen4K, SideKick]]
     for state in get_states(timeout=timeout):
         _LOGGER.debug("Received state: %s" % state)
-        if state['device_type'] == 'DreamScreenHD':
-            devices.append(DreamScreenHD(ip=state['ip'], state=state))
-        elif state['device_type'] == 'DreamScreen4K':
-            devices.append(DreamScreen4K(ip=state['ip'], state=state))
-        elif state['device_type'] == 'SideKick':
-            devices.append(SideKick(ip=state['ip'], state=state))
+        device = get_device(state)
+        if device != None:
+            devices.append(device)
     _LOGGER.debug("Devices: %s" % devices)
     return devices
 
@@ -565,7 +574,7 @@ def get_states(ip: str = '255.255.255.255', timeout: float = 1.0) -> \
 
 
 def get_state(ip: str, timeout: float = 1.0) -> \
-        Dict[str, Union[str, int, bytes, datetime.datetime]]:
+        Union[None, Dict[str, Union[str, int, bytes, datetime.datetime]]]:
     """State message generator for a specific device."""
     for state in get_states(ip=ip, timeout=timeout):
         if state['ip'] == ip:
